@@ -6,11 +6,17 @@ import 'gemini_provider.dart';
 import 'openai_provider.dart';
 import 'responses_provider.dart';
 import '../llm_log.dart';
+import '../llm_trace.dart';
 import '../web_search.dart';
 import '../../../l10n/l10n.dart';
 
-/// 按请求里的协议选对应的接口。
-Stream<String> streamChat(LlmRequest request) => switch (request.protocol) {
+/// 按请求里的协议选对应的接口。顺手记一份完整的前后文(见 [traceLlm]):
+/// 三种协议都从这儿出去,包这一层就都记下来了。
+Stream<String> streamChat(LlmRequest request) =>
+    traceLlm(request, _routeChat(request));
+
+/// 真正去问模型的那一层。
+Stream<String> _routeChat(LlmRequest request) => switch (request.protocol) {
   'google' => streamGeminiChat(request),
   'grok' => streamResponsesChat(request),
   protocolClaudeCode || protocolCodex => streamCliChat(request),

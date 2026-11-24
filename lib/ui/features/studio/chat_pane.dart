@@ -17,6 +17,7 @@ import '../../../core/harness/draft_block.dart';
 import '../../../data/models/app_config.dart';
 import '../../../data/services/config_service.dart';
 import '../../core/scroll_strip.dart';
+import '../../core/llm_trace_view.dart';
 import '../../core/smooth_scroll.dart';
 import '../../core/theme.dart';
 import '../../core/tour_spot.dart';

@@ -104,6 +104,14 @@ class _Header extends StatelessWidget {
             ),
           ),
         const Spacer(),
+        // 看这次发给模型的完整内容(连 system 提示、历史、当前提问)和它回来的全文。
+        IconButton(
+          tooltip: tr('看发给模型的完整内容'),
+          iconSize: 18,
+          visualDensity: VisualDensity.compact,
+          icon: const Icon(Icons.receipt_long_outlined),
+          onPressed: () => showLlmTrace(context),
+        ),
         ..._chatButtons(context),
         PopupMenuButton<String>(
           popUpAnimationStyle: Motion.menu(context),
