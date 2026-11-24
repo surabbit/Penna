@@ -173,6 +173,39 @@ extension StudioPages on StudioViewModel {
     return at;
   }
 
+  /// 清空第 [s] 个系列里每一页的成稿:页留着,只把内容抹掉(连固定区、待确认改动)。
+  /// 清之前先记一笔,和「清空工作区」一样能撤销、能回到这一步之前。
+  /// 不能清时返回给用户看的原因。
+  String? clearSeriesDrafts(int s) {
+    if (isStreaming) return tr('正在生成,稍后再清');
+    final pages0 = pages;
+    final hit = [for (final (i, p) in pages0.indexed) if (p.series == s) i];
+    if (hit.isEmpty) return tr('这个系列还没有页');
+    if (hit.every((i) => pages0[i].blocks.isEmpty)) {
+      return tr('「{0}」的成稿已经是空的', [seriesName(s)]);
+    }
+    final before = _snapshot();
+    // 和历史提示词里那一条一样:清掉之前留一份,点错了能放回来。
+    recordPrompt();
+    _pages = List.unmodifiable([
+      for (final (i, p) in pages0.indexed)
+        if (p.series == s) _newPage(p.series, name: p.name) else p,
+    ]);
+    // 眼前这一页就在这个系列里:它那几个字段是独立的,一起清掉。
+    if (series == s) {
+      _blocks = const [];
+      _pending = null;
+      _queued = const [];
+      _translation = null;
+      _translationBy = null;
+      _quote = null;
+      bodySelection = null;
+    }
+    _log(tr('清空「{0}」全部成稿', [seriesName(s)]), before: before);
+    _changed();
+    return null;
+  }
+
   /// 删掉第 [i] 页。一个系列的最后一页没了,它的对话收进对话历史。
   String? removePage(int i) {
     if (i < 0 || i >= _pages.length) return null;

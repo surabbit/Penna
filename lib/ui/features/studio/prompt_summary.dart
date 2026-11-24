@@ -19,6 +19,24 @@ class _SummarySectionState extends State<_SummarySection> {
 
   void _showImages() => setState(() => _images = true);
 
+  /// 清掉整条系列的成稿(页留着):带确认,清完记进操作记录,能撤销。
+  Future<void> _clearSeries(BuildContext context) async {
+    final name = vm.seriesName(vm.series);
+    final pages = vm.seriesLength;
+    if (!await confirmDelete(
+      context,
+      tr('清空整条系列?'),
+      tr('「{0}」这 {1} 页的成稿都会清掉;页、对话、出图记录都留着。', [name, pages]),
+      action: tr('清空'),
+    )) {
+      return;
+    }
+    final problem = vm.clearSeriesDrafts(vm.series);
+    if (problem != null && context.mounted) {
+      showToast(context, problem, warn: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final prompt = vm.finalPrompt;
@@ -56,6 +74,15 @@ class _SummarySectionState extends State<_SummarySection> {
                   onTap: _showImages,
                 );
               },
+            ),
+            const Spacer(),
+            // 清掉旧的东西:整条系列的成稿,页留住。
+            PennaButton(
+              label: tr('清空系列'),
+              icon: Icons.layers_clear_outlined,
+              tooltip: tr('清掉整条系列的成稿,页留着'),
+              borderColor: PennaColors.border,
+              onPressed: () => _clearSeries(context),
             ),
           ],
         ),

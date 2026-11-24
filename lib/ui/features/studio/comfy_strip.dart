@@ -123,6 +123,17 @@ class _ComfyStrip extends StatelessWidget {
                 runSpacing: 8,
                 children: [for (final g in images) _thumb(context, g.path)],
               ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: PennaButton(
+                  label: tr('清空记录'),
+                  icon: Icons.delete_sweep_outlined,
+                  tooltip: tr('清掉这些图在列表里的记录,磁盘上的文件留着'),
+                  borderColor: PennaColors.border,
+                  onPressed: runner.clearImages,
+                ),
+              ),
             ],
           ],
         ),

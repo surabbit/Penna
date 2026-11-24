@@ -289,6 +289,7 @@ class _LayoutPageState extends State<LayoutPage> {
               board: board,
               archive: widget.archive,
               comfy: widget.vm.comfy,
+              chat: widget.chat,
               title: () => widget.chat.pageName,
               snap: () => widget.config.config.layoutSnap,
               onToggle3D: _toggle3D,
@@ -524,6 +525,7 @@ class _TopBar extends StatelessWidget {
     required this.board,
     required this.archive,
     required this.comfy,
+    required this.chat,
     required this.title,
     required this.snap,
     required this.onToggle3D,
@@ -534,6 +536,36 @@ class _TopBar extends StatelessWidget {
 
   /// 「出图」交给它(和工作台同一条出图队列),存档案库时配它出过的图。
   final ComfyRunner comfy;
+
+  /// 布局页自己那场对话:「系列出图」照它的分页,一页一张。
+  final StudioViewModel chat;
+
+  /// 系列出图一次超过这么多张先问一句。
+  static const _seriesConfirmAt = 60;
+
+  /// 「系列出图」:这个系列从第 1 页起一页一张排进出图队列。
+  Future<void> _seriesGenerate(BuildContext context) async {
+    final prompts = chat.finalPromptsOf(chat.series);
+    if (prompts.isEmpty) {
+      return showToast(context, tr('这个系列还是空的'), warn: true);
+    }
+    if (prompts.length > _seriesConfirmAt &&
+        !await confirmDelete(
+          context,
+          tr('系列出图'),
+          tr('这个系列有 {0} 页,要全部排进出图队列吗?', [prompts.length]),
+          action: tr('全部出图'),
+        )) {
+      return;
+    }
+    // 按页的先后排:队列先进先出,第 1 页最先出。
+    for (final p in prompts) {
+      unawaited(comfy.generate(p));
+    }
+    if (context.mounted) {
+      showToast(context, tr('已排进出图队列 {0} 张', [prompts.length]));
+    }
+  }
 
   /// 眼前这页的名字,存档案库时先填进名称。
   final String Function() title;
@@ -635,6 +667,16 @@ class _TopBar extends StatelessWidget {
           ),
         ),
         const Spacer(),
+        const SizedBox(width: 6),
+        // 和工作台「最终提示词」上的系列出图一样:这个系列每页一张,按页序排队。
+        PennaButton(
+          label: tr('系列出图'),
+          icon: Icons.burst_mode_outlined,
+          tooltip: tr('这个系列从第 1 页起按顺序出图'),
+          borderColor: PennaColors.primaryBorder,
+          foreground: PennaColors.primary,
+          onPressed: () => _seriesGenerate(context),
+        ),
         const SizedBox(width: 6),
         // 同工作台「最终提示词」上的出图:交出去的布局 JSON 排进出图队列,进度在左边的队列里。
         PennaButton(

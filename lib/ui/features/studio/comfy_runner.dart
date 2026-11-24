@@ -273,6 +273,14 @@ class ComfyRunner extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 清掉「出图」页签里这次出过的图:只是不再列出来,磁盘上的文件留着
+  /// (在「设置 → 出图」那个文件夹里)。出完的队列记录一起清掉,排队中和正在出的不动。
+  void clearImages() {
+    _images = const [];
+    clearFinished();
+    notifyListeners();
+  }
+
   /// 换存图的位置并把已有的图搬过去;返回搬了几张。
   Future<int> moveTo(String dir) async {
     final from = imageDir;
