@@ -66,7 +66,20 @@ extension StudioLayoutPages on StudioViewModel {
       // 后放的话已立好的体块跟着镜头一转,框挪了位置、人物也转成侧身。
       first: _deliverPerspective,
     );
-    if (placed == null) return _deliverPerspective();
+    if (placed == null) {
+      // 写了 `<layout>` 却没放上:把原因说出来,否则用户只看到正文里说"排好了"、
+      // 画板里空的、卡片和灰字都没有。压根没写 `<layout>` 的不提:每条回复都
+      // 走这里,提了就成噪音。
+      final made = splitLayout(splitNewSkill(_messages.last.text).prose);
+      _deliverPerspective();
+      // 没打开画板时也不说:那不是这条回复的问题。
+      if (layout != null && made.json != null) {
+        _note(
+          made.complete ? tr('布局没放上:JSON 读不了') : tr('布局没放上:标签没写完'),
+        );
+      }
+      return;
+    }
     if (placed.isNotEmpty) _note(placed);
   }
 

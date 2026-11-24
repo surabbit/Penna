@@ -82,10 +82,15 @@ class ChatMessageView extends StatelessWidget {
     this.draftSections = const [],
     this.comfy,
     this.onGenerate,
+    this.canvas,
   });
 
   /// 当前页成稿的各段(标注 + 提示词开头)。回复问"转哪几段"时直接从这里列。
   final List<PickItem> draftSections;
+
+  /// 布局卡片数框用的真画布:区域控制那边传,卡片的框数才和画板一致。
+  /// 空着(主聊天、副聊天)就按一张很大的画布数,越界的框不会被截。
+  final ({int width, int height})? canvas;
 
   /// 出图的进度:这条回复要的图正在出时显示在它下面。
   final ComfyRunner? comfy;
@@ -376,6 +381,7 @@ class ChatMessageView extends StatelessWidget {
             json: laid.json!,
             complete: laid.complete,
             writing: streaming && !laid.complete,
+            canvas: canvas,
             onAdopt: onAdoptLayout == null
                 ? null
                 : () => onAdoptLayout!(laid.json!),

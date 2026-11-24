@@ -15,6 +15,7 @@ class LayoutCard extends StatelessWidget {
     required this.writing,
     this.onAdopt,
     this.onOpen,
+    this.canvas,
   });
 
   final String json;
@@ -22,16 +23,26 @@ class LayoutCard extends StatelessWidget {
   final bool writing;
   final VoidCallback? onAdopt;
 
+  /// 布局要放的画板尺寸:传了就跟画板用同一个画布数框,越界的框照样不算
+  /// (卡片上的框数才和画板对得上)。空着就按一张很大的画布数。
+  final ({int width, int height})? canvas;
+
   /// 切到区域控制工作台去看;只在主工作区的对话里有。
   final VoidCallback? onOpen;
 
   @override
   Widget build(BuildContext context) {
-    // 这里只看读不读得了、有几个框。画布给得足够大:按真画布算时框不会被截掉,
+    // 这里只看读不读得了、有几个框。画布照画板的来:画板会截掉越界的框,
+    // 卡片按大画布数就会多算;没有画板(主聊天、副聊天)时给张足够大的,
     // 小了反而会把靠边的框截成零面积、少算几个。
+    final size = canvas;
     final parsed = writing || !complete
         ? null
-        : parseMossLayout(json, width: _anyCanvas, height: _anyCanvas);
+        : parseMossLayout(
+            json,
+            width: size?.width ?? _anyCanvas,
+            height: size?.height ?? _anyCanvas,
+          );
     final broken = complete && !writing && parsed == null;
     final color = broken ? PennaColors.diffDelText : PennaColors.primary;
     return PennaCard(

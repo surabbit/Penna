@@ -443,6 +443,11 @@ class _ChatPaneState extends State<ChatPane> with _Attachments<ChatPane> {
         onOpenLayout: widget.onOpenLayout,
         onReuseAttachment: _reuse,
         comfy: widget.vm.comfy,
+        // 布局卡片按画板的真画布数框,卡片上的框数才和画板一致。
+        canvas: switch (widget.vm.layout?.layout) {
+          final l? => (width: l.width, height: l.height),
+          _ => null,
+        },
         onGenerate: (prompt) =>
             widget.vm.generateReply(message, prompt: prompt),
         streaming: widget.vm.isStreaming && last,
