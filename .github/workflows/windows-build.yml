@@ -1,0 +1,77 @@
+# 云端编译 Windows 版（本机不装 VS 也能出 exe）
+#
+# 用法：
+#   1) 把本文件放到你自己 Fork 的 penna 仓库：.github/workflows/windows-build.yml
+#   2) push 到任意分支，或在 Actions 页面点 “Run workflow”
+#   3) 跑完在 Actions 的 Artifacts 里下载 Penna-windows-x64.zip
+#
+# windows-latest 上预装了 VS 2022 + C++ 工作负载 + Windows SDK，
+# 所以这里不需要任何 VS 安装步骤，只要装 Flutter。
+name: Windows build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master, my-mods]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      # pubspec.lock 里记的是国内镜像地址；云上的机器直连 pub.dev 更稳
+      # （和 linux-appimage.yml 同一个处理）。
+      PUB_HOSTED_URL: https://pub.dev
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.2
+          channel: stable
+          cache: true
+
+      - name: 把 lock 里的国内镜像换回 pub.dev
+        shell: pwsh
+        run: |
+          (Get-Content pubspec.lock -Raw) -replace 'https://pub\.flutter-io\.cn','$env:PUB_HOSTED_URL' |
+            Set-Content pubspec.lock -NoNewline -Encoding utf8
+
+      - name: flutter doctor（日志里留一份工具链信息）
+        run: flutter doctor -v
+
+      - name: 依赖
+        run: flutter pub get
+
+      - name: 单测（改过布局/分镜代码时很有用）
+        run: flutter test
+        continue-on-error: true
+
+      - name: 编译
+        shell: pwsh
+        run: |
+          # flutter_onnxruntime 的 CMake 会自己从 GitHub 下 onnxruntime；
+          # 云上的网络一般没问题，但仍按作者的做法失败就重编一次。
+          flutter build windows --release --no-pub
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host 'first pass failed, retrying'
+            flutter build windows --release --no-pub
+          }
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+
+      - name: 打包 Release 目录
+        shell: pwsh
+        run: |
+          $ver = (Select-String -Path pubspec.yaml -Pattern '^version:\s*(\S+)').Matches[0].Groups[1].Value
+          Compress-Archive -Path build\windows\x64\runner\Release\* `
+            -DestinationPath "Penna-windows-x64-$ver.zip" -Force
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Penna-windows-x64
+          path: Penna-windows-x64-*.zip
+          retention-days: 30
